@@ -1,12 +1,16 @@
 import {basedir} from "../Server";
+import * as path from "path";
 
-const uploadFile = require("../middleware/upload");
+import { uploadFileMiddleware, historyUploadFileMiddleware } from "../middleware/upload";
+
 const fs = require("fs");
 const baseUrl = "http://localhost:3000/files/";
 
 const upload = async (req, res) => {
   try {
-    await uploadFile(req, res);
+    // await uploadFileMiddleware(req, res);
+    // await historyUploadFileMiddleware(req, res);
+    await Promise.all([uploadFileMiddleware(req, res), historyUploadFileMiddleware(req, res)]);
 
     if (req.file == undefined) {
       return res.status(400).send({ message: "Please upload a file!" });
@@ -31,8 +35,8 @@ const upload = async (req, res) => {
 };
 
 const getListFiles = (req, res) => {
-  console.log(basedir);
-  const directoryPath = basedir + "/public/";
+  //console.log(basedir);
+  const directoryPath = basedir + "/public/" + req.params.direction + "/";
 
   fs.readdir(directoryPath, function (err, files) {
     if (err) {
@@ -41,13 +45,13 @@ const getListFiles = (req, res) => {
       });
       console.log("send 500");
     }
-    console.log(files);
+    //console.log(files);
     let fileInfos: any[] = [];
 
     files.forEach((file) => {
       fileInfos.push({
         "name": file,
-        "url": baseUrl + file,
+        "url": baseUrl + req.params.direction + "/" + file,
       });
     });
 
@@ -57,7 +61,7 @@ const getListFiles = (req, res) => {
 
 const download = (req, res) => {
   const fileName = req.params.name;
-  const directoryPath = basedir + "/public/";
+  const directoryPath = basedir + "/public/" + req.params.direction + "/";
 
   res.download(directoryPath + fileName, fileName, (err) => {
     if (err) {
@@ -68,8 +72,27 @@ const download = (req, res) => {
   });
 };
 
+const clearFiles = (req, res) => {
+  const directoryPath = basedir + "/public/" + req.params.direction + "/";
+
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) throw err;
+
+    for (const file of files) {
+      fs.unlink(path.join(directoryPath, file), err => {
+        if (err) throw err;
+      });
+    }
+  });
+
+  res.status(200).send({
+    message: "Uploaded clear file successfully"
+  });
+};
+
 module.exports = {
   upload,
   getListFiles,
   download,
+  clearFiles,
 };
