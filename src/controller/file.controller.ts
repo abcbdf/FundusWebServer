@@ -37,6 +37,10 @@ const upload = async (req, res) => {
 const getListFiles = (req, res) => {
   //console.log(basedir);
   const directoryPath = basedir + "/public/" + req.params.direction + "/";
+  if (!fs.existsSync(directoryPath)){
+      fs.mkdirSync(directoryPath);
+  };
+
 
   fs.readdir(directoryPath, function (err, files) {
     if (err) {
